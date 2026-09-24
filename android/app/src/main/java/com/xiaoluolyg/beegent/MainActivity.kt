@@ -113,6 +113,7 @@ private fun Beegent(activity: ComponentActivity, store: SwarmStore, attachments:
         }
     }
     LaunchedEffect(session?.id, session?.draft) { draft = session?.draft ?: if (session == null) draft else "" }
+    LaunchedEffect(session) { preview = null }
     LaunchedEffect(drawer.currentValue) { if (drawer.currentValue == DrawerValue.Closed) store.clearList() }
     LaunchedEffect(store.socket.state.value) { if (store.socket.state.value == "closed") { draft = ""; address = "192.168.43.217"; messagePort = ""; downloadPort = "" } }
 
@@ -175,10 +176,10 @@ private fun Beegent(activity: ComponentActivity, store: SwarmStore, attachments:
             }
             LazyColumn(state = listState, modifier = Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (session?.historyNext != null) item {
-                    TextButton(onClick = { run { store.olderHistory() } }, enabled = !session.historyLoading, modifier = Modifier.fillMaxWidth()) { Text(if (session.historyLoading) "正在加载…" else "查看更早消息") }
+                    TextButton(onClick = { following = false; run { store.olderHistory() } }, enabled = !session.historyLoading, modifier = Modifier.fillMaxWidth()) { Text(if (session.historyLoading) "正在加载…" else "查看更早消息") }
                 }
                 if (rows.isEmpty()) item { Text(if (store.socket.state.value == "open") "输入消息，开始行动" else "连接电脑上的 Swarm，开始对话", color = Muted, modifier = Modifier.fillMaxWidth().padding(top = 80.dp)) }
-                items(rows, key = { it.id }) { row -> MessageCard(row, session?.id ?: "", attachments, onAnswer = { qid, answers -> run { store.answer(qid, answers) } }, onAttachment = ::attachmentAction) }
+                items(rows, key = { "${session?.id}|${it.id}" }) { row -> MessageCard(row, session?.id ?: "", attachments, onAnswer = { qid, answers -> run { store.answer(qid, answers) } }, onAttachment = ::attachmentAction) }
             }
             if (session?.notice?.isNotEmpty() == true) Text(session.notice, Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), color = Muted, fontSize = 12.sp)
             Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -188,8 +189,15 @@ private fun Beegent(activity: ComponentActivity, store: SwarmStore, attachments:
                     Button(onClick = { run { store.stop() } }, enabled = store.socket.state.value == "open" && session.state != "stopping",
                         colors = ButtonDefaults.buttonColors(containerColor = Honey, contentColor = Ink)) { Text("停止") }
                 }
-                Button(onClick = { val value = draft; following = true; run { store.sendDraft(value, Mode(role, profile, style)); draft = store.current?.draft ?: "" } },
-                    enabled = draft.isNotBlank() && store.socket.state.value == "open" && !store.creating,
+                Button(onClick = {
+                    if (store.socket.state.value != "open") connectionPanel = true
+                    else {
+                        val value = draft; draft = ""; session?.draft = ""; following = true
+                        scope.launch { try { store.sendDraft(value, Mode(role, profile, style)); draft = store.current?.draft ?: "" }
+                            catch (e: Exception) { draft = value; session?.draft = value; store.error = e.message ?: "发送失败" } }
+                    }
+                },
+                    enabled = draft.isNotBlank() && !store.creating && session?.historyLoading != true,
                     colors = ButtonDefaults.buttonColors(containerColor = Honey, contentColor = Ink)) {
                     Text(if (session != null && session.state !in listOf("idle", "error")) "排队" else "发送")
                 }
@@ -222,7 +230,7 @@ private fun Beegent(activity: ComponentActivity, store: SwarmStore, attachments:
 }
 
 @Composable private fun TodoPanel(session: Session) {
-    var expanded by remember(session.id) { mutableStateOf(false) }
+    var expanded by remember(session) { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 5.dp)) {
         val running = session.todos.firstOrNull { it.status == "in_progress" }
         val title = "任务进度 ${session.todos.count { it.status == "completed" }}/${session.todos.size}" + (running?.let { " · ${it.active}" } ?: "")
@@ -263,7 +271,7 @@ private fun Beegent(activity: ComponentActivity, store: SwarmStore, attachments:
 }
 
 @Composable private fun MessageCard(row: ChatRow, sessionId: String, attachments: Attachments, onAnswer: (String, List<Answer>) -> Unit, onAttachment: (Attachment, String) -> Unit) {
-    var expanded by remember(row.id) { mutableStateOf(!row.collapsed) }
+    var expanded by remember(sessionId, row.id) { mutableStateOf(!row.collapsed) }
     Column(Modifier.fillMaxWidth().padding(start = if (row.role == "user") 40.dp else 0.dp, end = if (row.role == "user") 0.dp else 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(if (row.role == "user") "你" else if (row.kind == "notice") "收到消息" else "beegent", fontSize = 11.sp, color = Muted)
         if (row.kind == "steps") {

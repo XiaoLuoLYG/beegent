@@ -55,18 +55,25 @@ internal class Attachments(private val activity: Activity, private val log: Diag
         } catch (e: Exception) { target.delete(); log.record("attachment.action.failed", obj("operationId" to operation, "error" to e.message), "error"); throw e }
     }
     suspend fun image(file: Attachment, edge: Int): Bitmap = imageSlots.withPermit {
-        val target = fetch(file, 32L * 1024 * 1024)
-        try { withContext(Dispatchers.IO) {
-            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            BitmapFactory.decodeFile(target.path, bounds)
-            require(bounds.outWidth > 0 && bounds.outHeight > 0) { "无法解码图片" }
-            var sample = 1; while (maxOf(bounds.outWidth, bounds.outHeight) / sample > edge * 2) sample *= 2
-            BitmapFactory.decodeFile(target.path, BitmapFactory.Options().apply { inSampleSize = sample }) ?: throw Exception("无法解码图片")
-        } } finally { target.delete() }
+        try {
+            val target = fetch(file, 32L * 1024 * 1024)
+            try { withContext(Dispatchers.IO) {
+                val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                BitmapFactory.decodeFile(target.path, bounds)
+                require(bounds.outWidth > 0 && bounds.outHeight > 0) { "无法解码图片" }
+                var sample = 1; while (maxOf(bounds.outWidth, bounds.outHeight) / sample > edge * 2) sample *= 2
+                BitmapFactory.decodeFile(target.path, BitmapFactory.Options().apply { inSampleSize = sample }) ?: throw Exception("无法解码图片")
+            }.also { log.record("attachment.preview.ready", obj("fileId" to file.id, "action" to "image")) } }
+            finally { target.delete() }
+        } catch (e: Exception) { log.record("attachment.preview.failed", obj("fileId" to file.id, "error" to e.message), "error"); throw e }
     }
     suspend fun html(file: Attachment): String {
-        val target = fetch(file, 4L * 1024 * 1024)
-        return try { withContext(Dispatchers.IO) { target.readText(Charsets.UTF_8).removePrefix("\uFEFF") } } finally { target.delete() }
+        try {
+            val target = fetch(file, 4L * 1024 * 1024)
+            return try { withContext(Dispatchers.IO) { target.readText(Charsets.UTF_8).removePrefix("\uFEFF") }
+                .also { log.record("attachment.preview.ready", obj("fileId" to file.id, "action" to "html", "characters" to it.length)) } }
+            finally { target.delete() }
+        } catch (e: Exception) { log.record("attachment.preview.failed", obj("fileId" to file.id, "error" to e.message), "error"); throw e }
     }
     suspend fun save(file: Attachment, uri: Uri) {
         val target = fetch(file, 128L * 1024 * 1024)

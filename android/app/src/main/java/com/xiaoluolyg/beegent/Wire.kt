@@ -53,6 +53,7 @@ internal class Diagnostics(context: Context) {
     private val directory = File(context.filesDir, "diagnostics").apply { mkdirs() }
     private val run = id()
     private val sequence = AtomicInteger()
+    private val written = AtomicInteger()
     private val dropped = AtomicInteger()
     private val queuedBytes = AtomicInteger()
     private val executor = ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS, ArrayBlockingQueue(1024))
@@ -87,17 +88,20 @@ internal class Diagnostics(context: Context) {
                 try {
                     val current = file(0)
                     if (current.length() + line.toByteArray().size > 4 * 1024 * 1024) {
-                        file(2).delete(); file(1).renameTo(file(2)); current.renameTo(file(1))
+                        file(2).delete()
+                        if (file(1).exists() && !file(1).renameTo(file(2))) throw Exception("日志轮换失败")
+                        if (current.exists() && !current.renameTo(file(1))) throw Exception("日志轮换失败")
                     }
                     current.appendText(line + "\n")
+                    written.incrementAndGet()
                 } catch (_: Exception) { dropped.incrementAndGet() }
                 finally { queuedBytes.addAndGet(-bytes) }
             } } catch (_: java.util.concurrent.RejectedExecutionException) { queuedBytes.addAndGet(-bytes); dropped.incrementAndGet() }
         } catch (_: Exception) { dropped.incrementAndGet() }
     }
-    fun summary() = "记录中 · 本次启动 ${sequence.get()} 条" + if (dropped.get() > 0) " · 丢弃 ${dropped.get()} 条" else ""
+    fun summary() = "记录中 · 本次启动已写入 ${written.get()} 条" + if (dropped.get() > 0) " · 丢弃 ${dropped.get()} 条" else ""
     fun export(): String { executor.submit {}.get(); return (2 downTo 0).joinToString("") { file(it).takeIf(File::exists)?.readText() ?: "" } }
-    fun clear() { executor.submit { (0..2).forEach { file(it).delete() }; sequence.set(0); dropped.set(0) }.get() }
+    fun clear() { executor.submit { (0..2).forEach { file(it).delete() }; sequence.set(0); written.set(0); dropped.set(0) }.get() }
     fun close() { executor.shutdown() }
 }
 
