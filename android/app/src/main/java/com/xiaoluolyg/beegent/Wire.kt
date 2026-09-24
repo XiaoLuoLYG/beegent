@@ -124,7 +124,11 @@ internal class SwarmSocket(private val log: Diagnostics) {
                     log.record("ws.receive.invalid", obj("characters" to text.length), "error"); return@post
                 }
                 val type = frame.s("type")
-                if (type != "event" && type != "res") { log.record("ws.receive.invalid", obj("reason" to "unknown type"), "error"); return@post }
+                if (type !in listOf("event", "res") || frame.has("payload") && frame.opt("payload") !is JSONObject ||
+                    type == "res" && (frame.s("id").isEmpty() || frame.opt("ok") !is Boolean) ||
+                    type == "event" && frame.s("event").isEmpty()) {
+                    log.record("ws.receive.invalid", obj("characters" to text.length, "reason" to "invalid frame"), "error"); return@post
+                }
                 val payload = frame.o("payload")
                 val rid = frame.s("id").ifEmpty { payload.s("request_id") }
                 log.record("ws.receive", obj("frame" to frame, "requestId" to rid, "characters" to text.length))
@@ -143,7 +147,8 @@ internal class SwarmSocket(private val log: Diagnostics) {
                         if (event == "runtime.accepted") item.result.complete(payload)
                         else item.result.completeExceptionally(RequestFailure(payload.s("error").ifEmpty { "补充被拒绝" }, payload.s("code") != "SESSION_INPUT_DELIVERY_UNKNOWN"))
                     }
-                    if (event != "connection.ack" && event != "connect.ack") onEvent(event, payload, frame)
+                    if (event != "connection.ack" && event != "connect.ack") try { onEvent(event, payload, frame) }
+                    catch (e: Exception) { log.record("ws.receive.handler_error", obj("event" to event, "error" to e.message), "error") }
                 }
             } }
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) { main.post {

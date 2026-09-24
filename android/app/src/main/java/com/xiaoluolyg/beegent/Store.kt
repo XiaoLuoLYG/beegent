@@ -275,6 +275,7 @@ internal class SwarmStore(private val scope: CoroutineScope, val log: Diagnostic
         require(interaction.status in listOf("pending", "failed")) { "此确认已提交或已失效" }
         require(answers.size == interaction.questions.size && answers.isNotEmpty()) { "请回答全部问题" }
         val structured = interaction.planKind == "plan_approval" && interaction.planActions.isNotEmpty()
+        if (structured && answers.size != 1) throw Exception("计划审批问题结构无效")
         val items = JSONArray()
         answers.forEachIndexed { i, answer ->
             val question = interaction.questions[i]
@@ -290,6 +291,8 @@ internal class SwarmStore(private val scope: CoroutineScope, val log: Diagnostic
         }
         if (socket.state.value != "open") throw Exception("请先连接电脑")
         val params = obj("session_id" to session.id, "request_id" to interaction.id, "answers" to items, "source" to interaction.source)
+        if (interaction.approvalSchema.isNotEmpty()) params.put("approval_schema", interaction.approvalSchema)
+        interaction.evolution?.let { params.put("evolution_meta", it) }
         var method = "chat.user_answer"; var runtime = false
         if (interaction.source == "swarmflow_human") {
             val flow = interaction.flow ?: throw Exception("缺少流程回复标识")
@@ -298,8 +301,6 @@ internal class SwarmStore(private val scope: CoroutineScope, val log: Diagnostic
             params.put("run_id", flow.s("run_id")); params.put("correlation_id", flow.s("correlation_id")); params.put("answer", answers.joinToString("\n") { it.custom.ifBlank { it.selected.joinToString("、") } })
         } else if (interaction.source in listOf("permission_interrupt", "confirm_interrupt", "ask_user_interrupt", "evolution_interrupt") || interaction.source == "skill_evolution_approval" && interaction.evolution?.s("approval_transport") == "interrupt") {
             method = "chat.send"; params.put("query", ""); params.put("mode", session.mode.wire())
-            if (interaction.approvalSchema.isNotEmpty()) params.put("approval_schema", interaction.approvalSchema)
-            interaction.evolution?.let { params.put("evolution_meta", it) }
             if (interaction.planKind.isNotEmpty()) params.put("plan_approval_kind", interaction.planKind)
             if (interaction.planContent.isNotEmpty()) params.put("plan_content", interaction.planContent)
             if (interaction.planLanguage.isNotEmpty()) params.put("plan_language", interaction.planLanguage)

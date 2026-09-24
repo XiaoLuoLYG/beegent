@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.webkit.CookieManager
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.webkit.WebResourceRequest
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -106,7 +107,7 @@ private fun Beegent(activity: ComponentActivity, store: SwarmStore, attachments:
         store.log.record("ui.attachment.tap", obj("sessionId" to session?.id, "fileId" to file.id, "action" to action))
         when (action) {
             "preview", "render" -> preview = file to action
-            "save" -> { pendingSave = file; save.launch(file.name) }
+            "save" -> { pendingSave = file; save.launch(file.name.replace(Regex("[\\\\/:*?\"<>|\\x00-\\x1f]"), "_").takeLast(120)) }
             else -> run { attachments.handoff(file, action == "share") }
         }
     }
@@ -299,7 +300,7 @@ private fun Beegent(activity: ComponentActivity, store: SwarmStore, attachments:
     val editable = value.status in listOf("pending", "failed")
     Text(if (value.planKind == "plan_approval") "计划审批" else "等待你的回复", fontWeight = FontWeight.Bold)
     if (value.planContent.isNotEmpty()) MarkdownText(value.planContent)
-    val structured = value.planKind == "plan_approval" && value.planActions.isNotEmpty()
+    val structured = value.planKind == "plan_approval" && value.planActions.isNotEmpty() && value.questions.size == 1
     if (structured) {
         val feedback = inputs.firstOrNull() ?: ""
         OutlinedTextField(feedback, { if (inputs.isNotEmpty()) inputs[0] = it }, label = { Text("计划修改意见") }, enabled = editable, modifier = Modifier.fillMaxWidth())
@@ -342,6 +343,8 @@ private fun Beegent(activity: ComponentActivity, store: SwarmStore, attachments:
 }
 
 @Composable private fun Preview(file: Attachment, action: String, attachments: Attachments, onClose: () -> Unit, onAction: (Attachment, String) -> Unit) {
+    var retry by remember(file.id) { mutableIntStateOf(0) }
+    var failure by remember(file.id) { mutableStateOf("") }
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Column(Modifier.fillMaxSize().background(Page).systemBarsPadding()) {
             Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -349,22 +352,30 @@ private fun Beegent(activity: ComponentActivity, store: SwarmStore, attachments:
                 Text(file.name, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             if (action == "render") {
-                val html by produceState<String?>(null, file.id) { value = try { attachments.html(file) } catch (e: Exception) { "<p>HTML 加载失败：${e.message}</p>" } }
-                if (html == null) CircularProgressIndicator() else {
+                val html by produceState<String?>(null, file.id, retry) { failure = ""; value = try { attachments.html(file) } catch (e: Exception) { failure = e.message ?: "HTML 加载失败"; null } }
+                if (html == null) Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    if (failure.isEmpty()) CircularProgressIndicator() else Column(horizontalAlignment = Alignment.CenterHorizontally) { Text(failure); TextButton(onClick = { retry++ }) { Text("重新加载") } }
+                } else {
                     val context = LocalContext.current
                     val web = remember(file.id) { WebView(context).apply {
                         settings.javaScriptEnabled = true; settings.domStorageEnabled = false; settings.allowFileAccess = false; settings.allowContentAccess = false
                         settings.cacheMode = android.webkit.WebSettings.LOAD_NO_CACHE; settings.setSupportMultipleWindows(false)
                         CookieManager.getInstance().setAcceptThirdPartyCookies(this, false)
-                        webViewClient = object : WebViewClient() {}
+                        webViewClient = object : WebViewClient() {
+                            override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean =
+                                request?.url?.scheme !in listOf("http", "https")
+                        }
                     } }
                     DisposableEffect(web) { onDispose { web.stopLoading(); web.destroy() } }
-                    AndroidView(factory = { web }, update = { it.loadDataWithBaseURL("https://preview.beegent.invalid/", html!!, "text/html", "UTF-8", null) }, modifier = Modifier.weight(1f).fillMaxWidth())
+                    LaunchedEffect(web, html) { web.loadDataWithBaseURL("https://preview.beegent.invalid/", html!!, "text/html", "UTF-8", null) }
+                    AndroidView(factory = { web }, modifier = Modifier.weight(1f).fillMaxWidth())
                 }
             } else {
-                val bitmap by produceState<Bitmap?>(null, file.id) { value = try { attachments.image(file, 2560) } catch (_: Exception) { null } }
+                val bitmap by produceState<Bitmap?>(null, file.id, retry) { failure = ""; value = try { attachments.image(file, 2560) } catch (e: Exception) { failure = e.message ?: "图片加载失败"; null } }
                 var zoom by remember(file.id) { mutableFloatStateOf(1f) }
-                if (bitmap == null) Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                if (bitmap == null) Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    if (failure.isEmpty()) CircularProgressIndicator() else Column(horizontalAlignment = Alignment.CenterHorizontally) { Text(failure); TextButton(onClick = { retry++ }) { Text("重新加载") } }
+                }
                 else Image(bitmap!!.asImageBitmap(), file.name, contentScale = ContentScale.Fit, modifier = Modifier.weight(1f).fillMaxWidth()
                     .graphicsLayer { scaleX = zoom; scaleY = zoom }
                     .pointerInput(file.id) { detectTransformGestures { _, _, scale, _ -> zoom = (zoom * scale).coerceIn(1f, 5f) } }

@@ -254,7 +254,9 @@ internal class Session(val id: String, val endpoint: String, val origin: String,
                         task = p.s("task_description").ifEmpty { agent.task }, status = status, running = status == "执行中", revision = revision, updatedAt = at))
                 }
             } else {
-                val activityId = "$aid|${p.s("task_id")}|${p.s("activity_id").ifEmpty { p.s("seq").ifEmpty { p.s("sequence") } }}"
+                val activityKey = p.s("activity_id").ifEmpty { p.s("seq") }.ifEmpty { p.s("sequence") }
+                    .ifEmpty { "${p.optLong("at_ms")}|${p.s("kind")}|${p.s("summary")}" }
+                val activityId = "$aid|${p.s("task_id")}|$activityKey"
                 if (!agentSeen.add(activityId)) row else {
                     if (agentSeen.size > 2048) agentSeen.clear()
                     val title = when (p.s("kind")) { "thinking" -> "思考"; "tool_call" -> "调用工具"; "tool_result" -> "工具结果"; "error" -> "错误"; "truncated" -> "记录已截断"; else -> p.s("kind").ifEmpty { "活动" } } + p.s("tool_name").let { if (it.isEmpty()) "" else " · $it" }
