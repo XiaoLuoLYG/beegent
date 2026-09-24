@@ -67,6 +67,7 @@ internal class History(private val socket: SwarmSocket, private val scope: Corou
                 if (item.parts.isNotEmpty()) throw Exception("历史消息分片不完整，请重试")
                 val mode: String; val next: JSONObject?; val snapshot: String; val end: Long
                 if (p.has("has_more") && !p.isNull("has_more")) {
+                    if (p.opt("has_more") !is Boolean) throw Exception("历史分页信息不完整")
                     if (item.protocol == "page") throw Exception("历史分页协议已变化，请重新打开会话")
                     mode = "cursor"; val more = p.optBoolean("has_more"); val token = p.s("next_cursor")
                     if (more && (token.isEmpty() || token == item.cursor)) throw Exception("历史分页信息不完整或游标未前进")
@@ -96,7 +97,11 @@ internal class History(private val socket: SwarmSocket, private val scope: Corou
                 val bucket = item.parts.getOrPut(key) { mutableMapOf() }; bucket[index] = record
                 if (bucket.size == count) {
                     val first = bucket[0] ?: throw Exception("历史分片不一致")
-                    val text = (0 until count).joinToString("") { chunk -> bucket[chunk]?.s("content") ?: throw Exception("历史分片不一致") }
+                    val text = (0 until count).joinToString("") { chunk ->
+                        val piece = bucket[chunk] ?: throw Exception("历史分片不一致")
+                        if (piece.o("_part").optInt("total_parts") != count) throw Exception("历史分片不一致")
+                        piece.s("content")
+                    }
                     first.put("content", text); first.remove("_part"); item.records.add(first); item.parts.remove(key)
                 }
             }

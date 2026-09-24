@@ -110,7 +110,7 @@ internal class Session(val id: String, val endpoint: String, val origin: String,
             unique[listOf(it.s("id").ifEmpty { it.s("request_id") }, it.s("event_type").ifEmpty { it.s("role") }, it.optLong("timestamp"), it.s("content")).joinToString("|")] = it
         }
         historyRecords = unique.values.sortedBy { it.optLong("timestamp") }
-        val live = rows.flatMap { listOf(it.id, it.answerId) }.filter(String::isNotBlank).toSet()
+        val live = rows.filterNot { it.historical }.flatMap { listOf(it.id, it.answerId) }.filter(String::isNotBlank).toSet()
         val replay = Session(id, endpoint, origin, mode, title)
         var turn = "history"
         historyRecords.forEachIndexed { index, record ->
