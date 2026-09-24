@@ -298,6 +298,7 @@ internal class SwarmStore(private val scope: CoroutineScope, val log: Diagnostic
             val flow = interaction.flow ?: throw Exception("缺少流程回复标识")
             if (flow.s("run_id").isEmpty() || flow.s("correlation_id").isEmpty()) throw Exception("缺少流程回复标识")
             method = "chat.swarmflow_reply"; params.remove("request_id"); params.remove("answers"); params.remove("source")
+            params.remove("approval_schema"); params.remove("evolution_meta")
             params.put("run_id", flow.s("run_id")); params.put("correlation_id", flow.s("correlation_id")); params.put("answer", answers.joinToString("\n") { it.custom.ifBlank { it.selected.joinToString("、") } })
         } else if (interaction.source in listOf("permission_interrupt", "confirm_interrupt", "ask_user_interrupt", "evolution_interrupt") || interaction.source == "skill_evolution_approval" && interaction.evolution?.s("approval_transport") == "interrupt") {
             method = "chat.send"; params.put("query", ""); params.put("mode", session.mode.wire())

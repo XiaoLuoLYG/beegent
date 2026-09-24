@@ -54,7 +54,8 @@ internal class Diagnostics(context: Context) {
     private val run = id()
     private val sequence = AtomicInteger()
     private val dropped = AtomicInteger()
-    private val executor = ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS, ArrayBlockingQueue(1024)) { _, _ -> dropped.incrementAndGet() }
+    private val queuedBytes = AtomicInteger()
+    private val executor = ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS, ArrayBlockingQueue(1024))
     private fun file(index: Int) = File(directory, if (index == 0) "communication.jsonl" else "communication.$index.jsonl")
     private fun scrub(value: Any?, key: String = "", depth: Int = 0): Any? {
         if (Regex("token$|password|passwd|secret|api[_-]?key|access[_-]?key|authorization|cookie|credential", RegexOption.IGNORE_CASE).containsMatchIn(key)) return "[REDACTED]"
@@ -63,13 +64,16 @@ internal class Diagnostics(context: Context) {
         if (value !is String) return value
         if (Regex("base64|binary|file_bytes", RegexOption.IGNORE_CASE).containsMatchIn(key)) return "[BINARY OMITTED: ${value.length} characters]"
         if (depth < 3 && value.trimStart().startsWith("{")) return try { scrub(JSONObject(value), key, depth + 1) } catch (_: Exception) { clean(value) }
+        if (depth < 3 && value.trimStart().startsWith("[")) return try { scrub(JSONArray(value), key, depth + 1) } catch (_: Exception) { clean(value) }
         return clean(value)
     }
     private fun clean(value: String): String = value
         .replace(Regex("data:[^\\s,;]+(?:;[^,\\s]*)?;base64,[A-Za-z0-9+/=_-]+", RegexOption.IGNORE_CASE), "[DATA URI OMITTED]")
         .replace(Regex("([?&][^=&#\\s]*(?:token|secret|api[_-]?key|signature|credential|password)[^=&#\\s]*=)[^&#\\s\\\"']+", RegexOption.IGNORE_CASE), "$1[REDACTED]")
         .replace(Regex("((?:Bearer|Basic)\\s+)[A-Za-z0-9._~+/=-]+", RegexOption.IGNORE_CASE), "$1[REDACTED]")
+        .replace(Regex("(https?://)[^\\s/@]+:[^\\s/@]+@", RegexOption.IGNORE_CASE), "$1[REDACTED]@")
         .replace(Regex("\\bsk-[A-Za-z0-9_-]{12,}\\b"), "[REDACTED]")
+        .replace(Regex("((?:api[_-]?key|password|secret|access[_-]?token)\\s*[:=]\\s*)[^\\s,;]+", RegexOption.IGNORE_CASE), "$1[REDACTED]")
         .replace(Regex("[A-Za-z0-9+/=_-]{4096,}"), "[LONG ENCODED VALUE OMITTED]")
     fun record(event: String, details: JSONObject = JSONObject(), level: String = "info") {
         try {
@@ -77,7 +81,9 @@ internal class Diagnostics(context: Context) {
                 "sequence" to sequence.incrementAndGet(), "level" to level, "event" to event, "details" to scrub(details))
             var line = entry.toString()
             if (line.length > 128 * 1024) line = obj("version" to 1, "event" to event, "truncated" to true, "characters" to line.length, "preview" to line.take(120 * 1024)).toString()
-            executor.execute {
+            val bytes = line.toByteArray(Charsets.UTF_8).size
+            if (queuedBytes.addAndGet(bytes) > 2 * 1024 * 1024) { queuedBytes.addAndGet(-bytes); dropped.incrementAndGet(); return }
+            try { executor.execute {
                 try {
                     val current = file(0)
                     if (current.length() + line.toByteArray().size > 4 * 1024 * 1024) {
@@ -85,7 +91,8 @@ internal class Diagnostics(context: Context) {
                     }
                     current.appendText(line + "\n")
                 } catch (_: Exception) { dropped.incrementAndGet() }
-            }
+                finally { queuedBytes.addAndGet(-bytes) }
+            } } catch (_: java.util.concurrent.RejectedExecutionException) { queuedBytes.addAndGet(-bytes); dropped.incrementAndGet() }
         } catch (_: Exception) { dropped.incrementAndGet() }
     }
     fun summary() = "记录中 · 本次启动 ${sequence.get()} 条" + if (dropped.get() > 0) " · 丢弃 ${dropped.get()} 条" else ""

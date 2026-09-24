@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -373,13 +374,16 @@ private fun Beegent(activity: ComponentActivity, store: SwarmStore, attachments:
             } else {
                 val bitmap by produceState<Bitmap?>(null, file.id, retry) { failure = ""; value = try { attachments.image(file, 2560) } catch (e: Exception) { failure = e.message ?: "图片加载失败"; null } }
                 var zoom by remember(file.id) { mutableFloatStateOf(1f) }
+                var pan by remember(file.id) { mutableStateOf(Offset.Zero) }
                 if (bitmap == null) Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                     if (failure.isEmpty()) CircularProgressIndicator() else Column(horizontalAlignment = Alignment.CenterHorizontally) { Text(failure); TextButton(onClick = { retry++ }) { Text("重新加载") } }
                 }
                 else Image(bitmap!!.asImageBitmap(), file.name, contentScale = ContentScale.Fit, modifier = Modifier.weight(1f).fillMaxWidth()
-                    .graphicsLayer { scaleX = zoom; scaleY = zoom }
-                    .pointerInput(file.id) { detectTransformGestures { _, _, scale, _ -> zoom = (zoom * scale).coerceIn(1f, 5f) } }
-                    .pointerInput(file.id) { detectTapGestures(onDoubleTap = { zoom = if (zoom > 1f) 1f else 2f }) })
+                    .graphicsLayer { scaleX = zoom; scaleY = zoom; translationX = pan.x; translationY = pan.y }
+                    .pointerInput(file.id) { detectTransformGestures { _, movement, scale, _ ->
+                        zoom = (zoom * scale).coerceIn(1f, 5f); pan = if (zoom > 1f) pan + movement else Offset.Zero
+                    } }
+                    .pointerInput(file.id) { detectTapGestures(onDoubleTap = { zoom = if (zoom > 1f) 1f else 2f; pan = Offset.Zero }) })
             }
             Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.End) {
                 TextButton(onClick = { onAction(file, "save") }) { Text("↓ 保存") }

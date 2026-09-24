@@ -9,6 +9,8 @@ import android.util.Base64
 import androidx.core.content.FileProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
@@ -18,6 +20,7 @@ internal class Attachments(private val activity: Activity, private val log: Diag
     private val directory = File(activity.cacheDir, "attachments").apply { mkdirs(); listFiles()?.forEach(File::delete) }
     private val client = OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS).readTimeout(60, TimeUnit.SECONDS)
         .callTimeout(120, TimeUnit.SECONDS).build()
+    private val imageSlots = Semaphore(2)
     private fun filename(value: String) = value.replace(Regex("[\\\\/:*?\"<>|\\x00-\\x1f]"), "_").takeLast(120).ifBlank { "attachment" }
     private suspend fun fetch(file: Attachment, limit: Long): File = withContext(Dispatchers.IO) {
         require(file.available) { "服务端未提供可下载内容" }
@@ -51,9 +54,9 @@ internal class Attachments(private val activity: Activity, private val log: Diag
             target
         } catch (e: Exception) { target.delete(); log.record("attachment.action.failed", obj("operationId" to operation, "error" to e.message), "error"); throw e }
     }
-    suspend fun image(file: Attachment, edge: Int): Bitmap {
+    suspend fun image(file: Attachment, edge: Int): Bitmap = imageSlots.withPermit {
         val target = fetch(file, 32L * 1024 * 1024)
-        return try { withContext(Dispatchers.IO) {
+        try { withContext(Dispatchers.IO) {
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
             BitmapFactory.decodeFile(target.path, bounds)
             require(bounds.outWidth > 0 && bounds.outHeight > 0) { "无法解码图片" }

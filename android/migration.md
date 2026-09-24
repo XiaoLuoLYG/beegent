@@ -1,10 +1,10 @@
 # Android 迁移清单
 
-基线：`hos` 分支的 HOS 客户端。Android 实现提交于 `android` 分支；功能是否可用仍需 Android 编译与真机连接验证。源代码覆盖不等于运行验收。
+基线：`hos` 分支的 HOS 客户端。Android 实现提交于 `android` 分支；GitHub Actions 可执行 `assembleDebug` 并保存调试 APK。编译通过不等于真机功能验收。
 
 | HOS 功能 | Android 源码位置 | 当前证据 |
 | --- | --- | --- |
-| IPv4 地址、消息／下载端口与内存连接设置 | `Wire.kt`、`MainActivity.kt` | 已编写，待编译与真机验证 |
+| IPv4 地址、消息／下载端口与内存连接设置 | `Wire.kt`、`MainActivity.kt` | 已编写，待真机验证 |
 | WebSocket 请求、ACK、超时、运行时受理和断线清理 | `Wire.kt` | 已编写，待验证 |
 | 会话列表分页、创建、三组模式、历史会话切换 | `Store.kt`、`MainActivity.kt` | 已编写，待验证 |
 | 游标／页码历史兼容、分片、快照、历史回放 | `Store.kt`、`Session.kt` | 已编写，待验证 |
