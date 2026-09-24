@@ -9,4 +9,4 @@
 - 仓库根目录包含 `hos/` 和 `android/` 两个平台目录。
 - HarmonyOS 工程与构建脚本位于 `hos/`，DevEco Studio 应打开该目录。
 - 使用设备 skill 时，将工程目录显式设为 `C:\kevin\code\JiuWenBridge\hos`；不要沿用 skill 中旧的根目录默认值。
-- Android 目录目前只有说明文档；创建 Android 工程需依用户后续要求。
+- Android 工程位于 `android/`，使用 Kotlin 与 Jetpack Compose；当前用户已明确要求迁移。

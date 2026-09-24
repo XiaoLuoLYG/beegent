@@ -4,7 +4,7 @@ JiuwenSwarm 的原生移动客户端。
 
 ```text
 hos/       HarmonyOS 客户端（ArkTS + ArkUI）
-android/   Android 预留目录（仅占位说明，尚未实现）
+android/   Android 客户端（Kotlin + Jetpack Compose）
 swarm/     给 WorkSwarm 使用的局域网转发 Skill 与单文件文档
 ```
 
@@ -49,6 +49,6 @@ node swarm/build-single-file.cjs
 
 ## Android
 
-目录已预留，当前提交中仅包含占位说明，尚未创建 Android 工程，见 [Android 迁移说明](android/README.md)。
+Android Studio 打开 `android/`；迁移范围与验证边界见 [Android 说明](android/README.md) 和 [迁移清单](android/migration.md)。
 
 本仓库不包含本机调试签名、模型密钥、依赖目录或构建产物。
