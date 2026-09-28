@@ -1,0 +1,17 @@
+BeeGent
+
+This repository continues work from kevinCsir/beegent:
+https://github.com/kevinCsir/beegent
+
+The imported HarmonyOS client and LAN relay retain their original authorship.
+Android development and repository presentation are maintained in XiaoLuoLYG/beegent.
+The original Git history is retained.
+
+No open-source license was declared in the imported repository snapshot, and
+this repository does not assign a new license to that code. Publication of this
+repository is not a relicensing of upstream work. Dependencies retain their own
+licenses. BeeGent is a companion client, not an official endorsement by the
+platform vendors or the WorkSwarm / JiuwenSwarm projects.
+
+The BeeGent icon, hero and brand overview were generated with AI assistance
+using user-supplied visual references. Original reference files are not included.

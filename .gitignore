@@ -26,3 +26,8 @@ key.properties
 # OS files
 .DS_Store
 Thumbs.db
+
+# Release packages stay in GitHub Releases, not Git history
+/dist/
+*.hap
+*.apk

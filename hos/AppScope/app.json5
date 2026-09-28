@@ -2,10 +2,9 @@
   "app": {
     "bundleName": "com.kevincsir.jiuwenbridge",
     "vendor": "kevinCsir",
-    "versionCode": 1000000,
-    "versionName": "0.1.0",
+    "versionCode": 1000001,
+    "versionName": "0.2.0",
     "icon": "$media:beegent_icon",
     "label": "$string:app_name"
   }
 }
-

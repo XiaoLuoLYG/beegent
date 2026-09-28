@@ -1,4 +1,4 @@
-# beegent Android
+# BeeGent Android
 
 JiuwenSwarm 的原生 Kotlin / Jetpack Compose 客户端。Android Studio 打开本目录。
 
@@ -13,3 +13,7 @@ Android 工程使用独立包名 `com.xiaoluolyg.beegent`。调试签名使用 A
 ## 迁移状态
 
 功能对照和验证边界见 [migration.md](migration.md)。
+
+## 下载预览版
+
+[GitHub Release v0.2.0](https://github.com/XiaoLuoLYG/beegent/releases/tag/v0.2.0) 提供 Debug APK 与 unsigned Release APK。完整构建与签名状态见 [构建指南](../docs/BUILDING.md)。

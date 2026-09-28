@@ -1,7 +1,7 @@
 {
   "modelVersion": "6.1.0",
   "name": "jiuwenbridge",
-  "version": "0.1.0",
-  "description": "HarmonyOS LAN chat client for JiuwenSwarm",
+  "version": "0.2.0",
+  "description": "BeeGent — a native mobile companion for WorkSwarm and JiuwenSwarm",
   "dependencies": {}
 }

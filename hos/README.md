@@ -1,4 +1,4 @@
-# beegent
+# BeeGent · HarmonyOS
 
 鸿蒙原生的 JiuwenSwarm 局域网聊天客户端。ArkTS + ArkUI，Stage 模型。
 
@@ -119,3 +119,7 @@ node .\tests\queue-mode-live.cjs ws://127.0.0.1:19000/ws
 真机验证仍需签名后安装，检查局域网连接、键盘布局、流式显示和滚动；桌面协议测试
 通过不能代替这些检查。具体测试记录见 `docs/validation.md`。
 
+
+## 下载预览版
+
+[GitHub Release v0.2.0](https://github.com/XiaoLuoLYG/beegent/releases/tag/v0.2.0) 提供 unsigned HAP。该产物使用 API 23 本地构建配置，仓库模板仍为 API 24；复现方式与安装前提见 [构建指南](../docs/BUILDING.md)。

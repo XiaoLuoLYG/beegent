@@ -1,0 +1,30 @@
+name: 问题反馈 / Bug report
+description: 报告可以复现的问题
+labels: [bug]
+body:
+  - type: dropdown
+    id: platform
+    attributes:
+      label: 平台 / Platform
+      options: [Android, HarmonyOS, LAN relay, Documentation]
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: 版本 / Versions
+      description: BeeGent、系统及桌面后端版本
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 复现与预期 / Reproduction and expected behavior
+      description: 操作步骤、实际结果和预期结果；不要包含私人信息。
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 脱敏日志 / Redacted logs
+      description: 可选。连接问题请注明消息与下载端口；提交前检查敏感内容。
