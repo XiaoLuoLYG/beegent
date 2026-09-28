@@ -20,90 +20,171 @@
   <a href="README.en.md">English</a>
 </p>
 
-![BeeGent — Your agents. Within reach.](docs/assets/brand/hero.jpg)
+![BeeGent · Your agents. Within reach.](docs/assets/brand/hero.jpg)
 
-**把任务交给电脑，把进展带在身边。** BeeGent 通过局域网连接桌面 WorkSwarm / JiuwenSwarm：看流式回复和工具进度、补充下一条指令、回应提问与审批、接收生成的文件。Agent 在电脑上执行，手机提供原生交互。
+电脑上的 Agent 执行任务时，你可以在手机上查看进展、补充要求、处理审批，或接收它生成的文件。BeeGent 通过局域网连接 WorkSwarm / JiuwenSwarm，提供 Android 和 HarmonyOS 原生客户端。
 
-> 当前为 **v0.2.0 预览版**。下载包经过编译检查，完整业务链路仍待真机验收。上方是品牌插画，非运行界面截图。
+> 当前为 **v0.2.0 预览版**。下载包已通过编译检查，完整业务流程仍待真机验收。上方是品牌插画，非应用截图。
 
-## 不只是一扇聊天窗口
+[💬 功能](#features) · [📦 下载](#download) · [🔌 连接](#connect) · [❓ 常见问题](#faq) · [🛠️ 开发文档](#development) · [🎨 品牌素材](#brand)
 
-| 你要做的事 | BeeGent 提供的入口 |
-| --- | --- |
-| 跟进正在执行的工作 | 流式消息、Markdown、工具步骤、子代理动态和任务清单 |
-| 切换工作方式 | Agent / Team、Work / Code、Normal / Plan |
-| 想起一句补充 | 消息排队、调整顺序、暂停与恢复；单 Agent 支持补充当前任务 |
-| 做关键决定 | 回答问题、权限审批、计划审批；历史审批只读 |
-| 接住工作结果 | 接收附件、图片预览、HTML 预览、保存与系统分享 |
-| 回到之前的会话 | 从服务端读取会话与分页历史，兼容游标和页码协议 |
+<a id="features"></a>
 
-两端采用原生技术：**Kotlin / Jetpack Compose** 与 **ArkTS / ArkUI**。会话以服务端为准，手机不将历史上下文反复回传。
+## 💬 用手机跟进工作
 
-## 开始使用
+### 看任务做到哪一步
 
-### 1 · 下载适合你的版本
+流式回复会随任务推进逐步显示。你也可以查看 Markdown 正文、工具调用、子代理动态和任务清单。
 
-| 平台 | 下载 | 使用说明 |
+### 继续安排任务
+
+创建会话时，可以选择 Agent / Team、Work / Code、Normal / Plan。任务执行中，新消息先进入队列，你可以编辑内容、调整顺序、暂停或恢复发送。单 Agent 任务还支持直接补充当前要求。
+
+### 回应问题与审批
+
+在手机上回答 Agent 的提问，处理权限申请和计划审批。历史记录中的审批仅供查看，不能重复提交。
+
+### 查看历史和工作结果
+
+打开已有会话，继续读取服务端的历史消息。收到附件后，可以预览图片和 HTML，保存文件，或通过系统分享给其他应用。
+
+<a id="开始使用"></a>
+<a id="download"></a>
+
+## 📦 下载 BeeGent
+
+Android 用户可以下载带调试签名的 APK 安装体验。未签名的 APK 和 HAP 则适合需要自行签名的开发者。
+
+| 你的设备或用途 | 下载 v0.2.0 | 安装前需要知道 |
 | --- | --- | --- |
-| Android 8.0+ | [Debug APK](https://github.com/XiaoLuoLYG/beegent/releases/download/v0.2.0/BeeGent-v0.2.0-android-debug.apk) | 带调试签名，可手动安装；不是正式签名版本 |
-| Android · 自行签名 | [Unsigned APK](https://github.com/XiaoLuoLYG/beegent/releases/download/v0.2.0/BeeGent-v0.2.0-android-unsigned.apk) | Release 构建，需要先签名才能安装 |
-| HarmonyOS · 开发者 | [Unsigned HAP](https://github.com/XiaoLuoLYG/beegent/releases/download/v0.2.0/BeeGent-v0.2.0-harmonyos-unsigned.hap) | 需要有效的 HarmonyOS 签名与设备授权；不是点击即装包 |
+| Android 8.0 及以上 | [下载 Debug APK](https://github.com/XiaoLuoLYG/beegent/releases/download/v0.2.0/BeeGent-v0.2.0-android-debug.apk) | 可手动安装，使用调试签名 |
+| Android，自行签名 | [下载 Unsigned APK](https://github.com/XiaoLuoLYG/beegent/releases/download/v0.2.0/BeeGent-v0.2.0-android-unsigned.apk) | Release 构建，签名后才能安装 |
+| HarmonyOS | [下载 Unsigned HAP](https://github.com/XiaoLuoLYG/beegent/releases/download/v0.2.0/BeeGent-v0.2.0-harmonyos-unsigned.hap) | 需要有效的 HarmonyOS 签名与设备授权 |
 
-[全部发布文件与 SHA-256 校验值 →](https://github.com/XiaoLuoLYG/beegent/releases/tag/v0.2.0)
+[查看全部发布文件、构建信息与 SHA-256 校验值](https://github.com/XiaoLuoLYG/beegent/releases/tag/v0.2.0)
 
-### 2 · 让桌面 Agent 可连接
+<a id="connect"></a>
 
-启动桌面 WorkSwarm / JiuwenSwarm。若服务仅监听本机，将 [局域网转发 Skill](swarm/beegent-lan-relay.md) 交给 WorkSwarm，按文档启动转发。它使用 Node.js 18+，支持 macOS、Windows、Linux，无需 npm 依赖。
+## 🔌 连接你的电脑
 
-### 3 · 手机填入电脑地址
+安装后，需要连接运行 WorkSwarm / JiuwenSwarm 的电脑，由桌面后端执行任务和调用模型。
 
-手机与电脑连接同一可信局域网。在 BeeGent 的连接面板填入电脑的 **IPv4 地址**；使用默认转发时，消息和下载端口可以留空。
+### 1. 启动桌面服务
 
-| 手机连接 | 默认桌面目标 |
-| --- | --- |
-| `电脑 IP:29000` · 消息 | `127.0.0.1:19000` · WebChannel |
-| `电脑 IP:25173` · 附件 | `127.0.0.1:5173` · 下载服务 |
+打开电脑上的 WorkSwarm / JiuwenSwarm。若它只接受本机连接，将 [局域网转发 Skill](swarm/beegent-lan-relay.md) 交给 WorkSwarm，按文档启动转发。
 
-桌面端可能改用其他端口，以实际启动信息为准。连接后选择已有会话，或选好模式后发送第一条消息。
+转发工具支持 macOS、Windows 和 Linux，需要 Node.js 18+，无需安装 npm 依赖。
 
-## 使用边界，提前说清
+### 2. 填入电脑地址
 
-- **需要桌面后端。** BeeGent 不在手机本地运行模型或 Agent；断开手机连接也不等于终止电脑任务。
-- **仅面向可信局域网。** 当前使用明文 WS / HTTP，没有独立登录与 token 配置，不应直接暴露到公网。
-- **会话数据来自服务端。** 地址、会话、草稿和队列仅在当前运行内存中；断线或切换会话会清空未发送队列。通信诊断日志单独存储，可导出、清空。
-- **附件方向是电脑到手机。** 当前发送入口是文本，不含手机文件上传；历史读取不等于跨客户端实时同步。
-- **预览版不代表已完成验收。** 详见 [Android 状态](android/migration.md) 与 [HarmonyOS 验证记录](hos/docs/validation.md)。
+让手机和电脑接入同一可信局域网。在 BeeGent 的连接面板填入电脑的 IPv4 地址；使用默认转发时，消息和下载端口都可以留空。
 
-## 参与构建
+### 3. 打开会话
 
-```text
-android/    Kotlin + Jetpack Compose 原生客户端
-hos/        ArkTS + ArkUI 原生客户端
-swarm/      局域网转发 Skill 与可分享的单文件文档
-docs/       构建、发布与品牌素材
-```
-
-默认 `android` 分支包含两端代码；`hos` 保留鸿蒙开发基线。Android Studio 打开 `android/`，DevEco Studio 打开 `hos/`。
-
-[构建指南](docs/BUILDING.md) · [贡献约定](CONTRIBUTING.md) · [问题反馈](https://github.com/XiaoLuoLYG/beegent/issues/new/choose) · [安全说明](SECURITY.md) · [更新记录](CHANGELOG.md)
-
-## 认识这只蜜蜂
-
-蜂蜜黄代表行动，淡紫翅膀延续 WorkSwarm 的亲和力，身体上的 **B** 形纹路属于 BeeGent。下载 [App 图标](docs/assets/brand/app-icon.png)、[主视觉](docs/assets/brand/hero.jpg)、[分享封面](docs/assets/brand/social-preview.jpg) 或查看 [品牌板](docs/assets/brand/brand-board.jpg)。
+连接后，可以选择已有会话，也可以选好工作模式后发送第一条消息，创建新会话。
 
 <details>
-<summary>展开品牌视觉</summary>
+<summary>需要手动填写端口？查看默认配置</summary>
 
-![BeeGent 品牌系统](docs/assets/brand/brand-board.jpg)
+| 用途 | 手机连接的地址 | 转发到电脑上的服务 |
+| --- | --- | --- |
+| 消息 | `电脑 IP:29000` | `127.0.0.1:19000`，WebChannel |
+| 附件 | `电脑 IP:25173` | `127.0.0.1:5173`，下载服务 |
 
-品牌图为 AI 辅助生成的设计素材；其中的设备画面是视觉示意。生成说明见 [品牌文件](docs/assets/brand/README.md)。
+桌面端可能使用其他端口，请以实际启动信息为准，并相应调整转发配置。
 
 </details>
 
-## 来源与许可
+> 当前连接使用明文 WS / HTTP，没有独立登录或 token 配置。请只在可信局域网内使用，不要把这些端口直接开放到公网。
 
-本项目基于 [kevinCsir/beegent](https://github.com/kevinCsir/beegent) 的 HarmonyOS 客户端与转发工具，继续开发 Android 客户端及 BeeGent 品牌。感谢原作者与 WorkSwarm / JiuwenSwarm 项目。
+<a id="faq"></a>
 
-本仓库目前未声明开源许可证；公开访问不代表额外授予代码或上游素材的使用许可。来源说明见 [NOTICE](NOTICE)。
+## ❓ 使用中可能遇到的问题
 
-如果 BeeGent 对你有用，欢迎点一个 Star，或在 Discussions 分享你的手机工作流。
+<details>
+<summary>手机断开连接，电脑上的任务会停吗？</summary>
+
+不会。任务由电脑端执行，手机断线不会终止任务。若要停止任务，需要向后端发出停止请求；结果不确定时，请在电脑端确认。
+
+</details>
+
+<details>
+<summary>重新打开 App，会恢复连接地址和草稿吗？</summary>
+
+不会。地址、会话状态、草稿和队列只保存在当前运行内存中。断线或切换会话会清空未发送的队列，请留意尚未发出的消息。
+
+重新连接后，仍可从服务端读取已有会话和历史。
+
+通信诊断日志是单独的本地记录，可以导出或清空。
+
+</details>
+
+<details>
+<summary>历史会话会和其他客户端实时同步吗？</summary>
+
+BeeGent 从服务端读取会话与历史消息，但历史读取不等于跨客户端实时同步。客户端兼容游标和页码两种分页协议，也不会把已读取的历史上下文重复回传。
+
+</details>
+
+<details>
+<summary>能把手机里的文件发给 Agent 吗？</summary>
+
+目前发送入口只支持文本。附件功能用于接收电脑端生成的文件，尚不支持从手机上传文件。
+
+</details>
+
+<details>
+<summary>这个预览版验证到了哪一步？</summary>
+
+v0.2.0 发布包经过源码、编译和文件校验，连接、聊天、队列、审批及附件等完整业务流程仍待真机验收。本次发布没有运行自动测试或真机 UI 测试。
+
+具体记录见 [Android 状态](android/migration.md) 和 [HarmonyOS 验证记录](hos/docs/validation.md)。
+
+</details>
+
+<a id="development"></a>
+
+## 🛠️ 开发与贡献
+
+| 目录 | 内容 | 用什么打开 |
+| --- | --- | --- |
+| [`android/`](android/) | Kotlin + Jetpack Compose 客户端 | Android Studio |
+| [`hos/`](hos/) | ArkTS + ArkUI 客户端 | DevEco Studio |
+| [`swarm/`](swarm/) | 局域网转发 Skill 与单文件文档 | 文本编辑器 |
+| [`docs/`](docs/) | 构建、发布与品牌素材 | 文本编辑器 |
+
+默认 `android` 分支包含两端代码，`hos` 分支保留鸿蒙开发基线。请用对应 IDE 打开平台目录。
+
+| 你想做什么 | 从这里开始 |
+| --- | --- |
+| 自己编译安装包 | [构建指南](docs/BUILDING.md) |
+| 提交代码或文档改进 | [贡献约定](CONTRIBUTING.md) |
+| 报告问题 | [创建 Issue](https://github.com/XiaoLuoLYG/beegent/issues/new/choose) |
+| 提问或分享使用方式 | [Discussions](https://github.com/XiaoLuoLYG/beegent/discussions) |
+| 报告安全问题 | [安全说明与私密报告入口](SECURITY.md) |
+| 查看版本变化 | [更新记录](CHANGELOG.md) |
+
+<a id="brand"></a>
+
+## 🎨 图标与品牌素材
+
+BeeGent 的图标使用蜂蜜黄和淡紫色，蜜蜂身上的纹路藏着一个字母 B。
+
+[App 图标](docs/assets/brand/app-icon.png) · [主视觉](docs/assets/brand/hero.jpg) · [分享封面](docs/assets/brand/social-preview.jpg) · [下载素材包](https://github.com/XiaoLuoLYG/beegent/releases/download/v0.2.0/BeeGent-v0.2.0-brand-assets.zip)
+
+<details>
+<summary>展开查看品牌板</summary>
+
+![BeeGent 品牌系统](docs/assets/brand/brand-board.jpg)
+
+这些图片由 AI 辅助生成，设备画面是设计示意，不是应用运行截图。[查看生成说明](docs/assets/brand/README.md)。
+
+</details>
+
+## 🙌 来源与许可
+
+BeeGent 基于 [kevinCsir/beegent](https://github.com/kevinCsir/beegent) 的 HarmonyOS 客户端和转发工具，继续开发 Android 客户端及品牌素材。感谢原作者和 WorkSwarm / JiuwenSwarm 项目的工作。
+
+本仓库尚未声明开源许可证。公开访问不代表额外授予代码或上游素材的使用许可，来源与署名见 [NOTICE](NOTICE)。
+
+如果 BeeGent 帮上了忙，欢迎留一个 Star；遇到问题或有新的使用想法，可以到 [Discussions](https://github.com/XiaoLuoLYG/beegent/discussions) 聊聊。
